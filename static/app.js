@@ -59,16 +59,16 @@
 		var wrap = document.getElementById('wrapper');
 		wrap.innerHTML = '';
 		wrap.appendChild(board);
-		$('div.col').on('click', function (event) {
+		$('.col').on('click', function (event) {
 			var row = $(this).data('row');
 			var col = $(this).data('col');
-			ws.sendmsg('left', row, col);
+			ws.move('left', row, col);
 			return false;
 		});
-		$('div.col').on('contextmenu', function(event) {
+		$('.col').on('contextmenu', function(event) {
 			var row = $(this).data('row');
 			var col = $(this).data('col');
-			ws.sendmsg('right', row, col);
+			ws.move('right', row, col);
 			return false;
 		});
 	};
@@ -81,14 +81,38 @@
     ws.onerror = function () {};
 
     // Send things like {'type': 'leftclick', 'row': 3, 'col': 4}
-    ws.sendmsg = function (type, row, col) {
-      ws.send(JSON.stringify({'click': type, 'row': row, 'col': col}));
+    ws.move = function (type, row, col) {
+    	var message = {
+    		'Type': 'move',
+    		'Value': {
+    			'click': type, 
+    			'row': row, 
+    			'col': col
+    		}
+    	};
+      ws.send(JSON.stringify(message));
+    };
+    ws.newGame = function () {
+    	var message = {
+    		'Type': 'newGame',
+    		'Value': {}
+    	};
+    	ws.send(JSON.stringify(message));
     };
 
     ws.onmessage = function (event) {
     	console.log(event);
-    	ms.genBoard(JSON.parse(event['data']));
+    	var msg = JSON.parse(event['data']);
+    	if (msg['Type'] === 'board') {
+    		ms.genBoard(msg['Value']);
+    	}
+    	if (msg['Type'] === 'status') {
+    		alert(msg['Value']);
+    	}
     };
 
-
+    $('#newgame').on('click', function (event) {
+    	ws.newGame();
+    	return false;
+    });
 }(window.ms = window.ms || {}, jQuery));

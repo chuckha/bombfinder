@@ -8,9 +8,22 @@ import (
 
 type Board struct {
 	Height, Width, Bombs int
-	Win                  bool
 	Finished             bool
+	Won                  bool
+	Numbers              int
+	Clicked              int
 	Field                [][]*Cell
+}
+
+func NewBoardWithField(field [][]*Cell) *Board {
+	height, width, bombCount, numbersCount := FieldInfo(field)
+	return &Board{
+		Height:  height,
+		Width:   width,
+		Bombs:   bombCount,
+		Field:   field,
+		Numbers: numbersCount,
+	}
 }
 
 func NewBoard(h, w, bombs int) (*Board, error) {
@@ -18,12 +31,36 @@ func NewBoard(h, w, bombs int) (*Board, error) {
 	if err != nil {
 		return nil, err
 	}
+	_, _, _, numbers := FieldInfo(field)
 	return &Board{
-		Height: h,
-		Width:  w,
-		Bombs:  bombs,
-		Field:  field,
+		Height:  h,
+		Width:   w,
+		Bombs:   bombs,
+		Field:   field,
+		Numbers: numbers,
 	}, nil
+}
+
+// Return
+// Height, Width, BombCount, NumbersCount
+func FieldInfo(field [][]*Cell) (int, int, int, int) {
+	height := len(field)
+	width := len(field[0])
+	bombCount := 0
+	numbersCount := 0
+	for i := 0; i < height; i++ {
+		for j := 0; j < width; j++ {
+			switch field[i][j].Data {
+			case bomb:
+				bombCount += 1
+			case zero:
+				continue
+			default:
+				numbersCount += 1
+			}
+		}
+	}
+	return height, width, bombCount, numbersCount
 }
 
 func (b *Board) String() string {
@@ -36,7 +73,7 @@ func (b *Board) String() string {
 		out += "|"
 		rowRep := make([]string, len(b.Field[i]))
 		for j := range b.Field[i] {
-			rowRep[j] = b.Field[i][j].String()
+			rowRep[j] = fmt.Sprintf("%d", b.Field[i][j].Data)
 		}
 		out += strings.Join(rowRep, "|")
 		out += "|\n"
@@ -47,13 +84,44 @@ func (b *Board) String() string {
 	return out
 }
 
-func (b *Board) RightClick(row, col int) {
+func (b *Board) RightClick(row, col int) error {
+	if b.Finished {
+		return nil
+	}
 	b.Field[row][col].RightClick()
+	return nil
 }
-func (b *Board) LeftClick(row, col int) {
+func (b *Board) LeftClick(row, col int) error {
+	// If the board is finished, don't do anything
+	if b.Finished {
+		return nil
+	}
+	// If it's already been clicked, don't do anything
+	if b.Field[row][col].Pressed {
+		return nil
+	}
+
 	b.Field[row][col].LeftClick()
-	if b.Field[row][col].Data == zero {
+
+	// What did we click?
+	switch b.Field[row][col].Data {
+	case zero:
+		// If we get a zero, we need to reveal all zeroes around
 		b.ZeroAround(row, col)
+		return nil
+	case bomb:
+		// If we click a bomb, we lose the game
+		b.Finished = true
+		b.Won = false
+		return fmt.Errorf("Boom!")
+	default:
+		// Otherwise we clicked a number. One step closer to victory
+		b.Clicked += 1
+		if b.Clicked == b.Numbers {
+			b.Finished = true
+			b.Won = true
+		}
+		return nil
 	}
 }
 
@@ -62,8 +130,15 @@ func (b *Board) ZeroAround(row, col int) {
 	leftClicker := func(c *Cell) {
 		if c.Display == none {
 			c.LeftClick()
-			if c.Data == zero {
+			switch c.Data {
+			case zero:
 				toZeroAround <- c
+			case one, two, three, four, five, six, seven, eight:
+				b.Clicked += 1
+				if b.Clicked == b.Numbers {
+					b.Finished = true
+					b.Won = true
+				}
 			}
 		}
 	}

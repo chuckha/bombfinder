@@ -7,7 +7,8 @@ type Game struct {
 }
 
 func NewGame() *Game {
+	b, _ := NewBoard(10, 10, 10)
 	return &Game{
-		Board: NewBoard(10, 10, 10),
+		Board: b,
 	}
 }
