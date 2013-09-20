@@ -17,8 +17,16 @@ footer {
 	margin: 0;
 }
 
-#game {
+#wrapper {
 	display: inline-block;
+}
+
+#game {
+	float: left;
+}
+#info {
+	float: left;
+	padding-left: 30px;
 }
 
 div.row:after {
@@ -77,7 +85,7 @@ div.eight {
 
 div.pressed, div.col:hover {
 	border-color: #a0a0a0;
-	border-width: 1px;
+	border-width: 2px; /* firefox fix */
 }
 
 

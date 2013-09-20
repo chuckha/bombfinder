@@ -9,6 +9,30 @@
 		return ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'][val];
 	};
 
+	var buildPlayer = function (playerObj) {
+		var player = document.createElement('tr');
+		var name = document.createElement('td');
+		var active = document.createElement('td');
+		var color = document.createElement('td');
+		player.appendChild(name);
+		player.appendChild(active);
+		player.appendChild(color);
+		name.innerHTML = playerObj['Name'];
+		active.innerHTML = '☺';
+		color.setAttribute('style', 'background-color: ' + playerObj['Color']);
+		return player
+	};
+
+	var buildPlayers = function (listOfPlayers) {
+		var i = 0,
+			len = listOfPlayers.length,
+			table = document.getElementById('playerTable');
+		table.innerHTML = '<tr><th>Player</th><th>Active</th><th>Color</th></tr>';
+		for (;i < len; i++) {
+			table.appendChild(buildPlayer(listOfPlayers[i]));
+		}
+	};
+
 	var buildCell = function (val, row, col) {
 		var cell = document.createElement('div');
 		cell.className = "col";
@@ -17,7 +41,7 @@
 			cell.className += ' ' + getClass(val);
 			cell.appendChild(d);
 		}
-		if (val != '') {
+		if (val != '' && val != '⚑' && val != '?') {
 			cell.className += ' pressed';
 		}
 		if (val === '-') {
@@ -45,7 +69,7 @@
 		var i = 0,
 			len = listOfRows.length,
 			board = document.createElement('div');
-		board.id = 'game';
+		board.id = 'board';
 		for (;i < len; i++) {
 			board.appendChild(buildRow(listOfRows[i], i));
 		}
@@ -56,7 +80,7 @@
 
 	ms.genBoard = function (obj) {
 		var board = buildBoard(obj['Field']);
-		var wrap = document.getElementById('wrapper');
+		var wrap = document.getElementById('game');
 		wrap.innerHTML = '';
 		wrap.appendChild(board);
 		$('.col').on('click', function (event) {
@@ -72,6 +96,37 @@
 			return false;
 		});
 	};
+	ms.waitingMsg = function (obj) {
+		// Looks for 'Required', 'Have' keys
+		$('#startInfo').html('<p>Waiting for more players to join</p><p>Have ' + obj['Have'] + ' need ' + obj['Required'] + ' players.');
+	}
+	ms.updatePlayers = function (listOfPlayers) {
+		// [
+		//  {Color: "#aabbcc", Playing: true}
+		// ]
+		buildPlayers(listOfPlayers);
+	}
+	ms.invalidUsername = function (msg) {
+		$('#errorusername').text(msg);
+	};
+	ms.setupUsername = function (username) {
+		$('#usernamestuff').text('Playing as ' + username);
+		$('#username-submit').off();
+		$('#username').off();
+	};
+	/* events */
+	$('#username-submit').on('click', function (event) {
+		sendUsername();
+	});
+	$('#username').on('keypress', function (event) {
+		if (event.keyCode === 13) {
+			sendUsername();
+		}
+	});
+	var sendUsername = function () {
+		var username = $('#username').val();
+		ws.send(username);
+	}
 
     ws = new WebSocket("ws://localhost:8080/sweep");
     ws.onopen = function () {};
@@ -92,27 +147,25 @@
     	};
       ws.send(JSON.stringify(message));
     };
-    ws.newGame = function () {
-    	var message = {
-    		'Type': 'newGame',
-    		'Value': {}
-    	};
-    	ws.send(JSON.stringify(message));
-    };
 
     ws.onmessage = function (event) {
     	console.log(event);
+
+    	// just be ok with pings to see if we're still alive.
+	   // if (event.data === 'ping') { return; }
     	var msg = JSON.parse(event['data']);
-    	if (msg['Type'] === 'board') {
+    	if (msg['Type'] === 'players') {
+    		ms.updatePlayers(msg['Value']['Players']);
+    	} else if (msg['Type'] === 'info') {
+    		ms.waitingMsg(msg['Value']);
+    	} else if (msg['Type'] === 'board') {
     		ms.genBoard(msg['Value']);
-    	}
-    	if (msg['Type'] === 'status') {
+    	} else if (msg['Type'] === 'status') {
     		alert(msg['Value']);
+    	} else if (msg['Type'] === 'InvalidUsername') {
+    		ms.invalidUsername(msg['Value']);
+    	} else if (msg['Type'] === 'ok') {
+    		ms.setupUsername(msg['Value']);
     	}
     };
-
-    $('#newgame').on('click', function (event) {
-    	ws.newGame();
-    	return false;
-    });
 }(window.ms = window.ms || {}, jQuery));

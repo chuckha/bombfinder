@@ -47,27 +47,38 @@ type Cell struct {
 	Display  int `json:"-"`
 	Pressed  bool
 	Val      string
+	Player   *Player
 	Data     int `json:"-"`
 	Row, Col int `json:"-"`
 }
 
-func (c *Cell) RightClick() {
+func (c *Cell) RightClick(player *Player) {
+	// If it's pressed already, don't do anything
+	if c.Pressed {
+		return
+	}
+	// If it's a flag, only let the owner player change it
+	if c.Display == flag && player != c.Player {
+		return
+	}
 	switch c.Display {
 	case none:
 		c.Display = flag
 		c.Val = Flag
+		c.Player = player
 	case flag:
-		c.Display = unknown
-		c.Val = Unknown
-	case unknown:
 		c.Display = none
 		c.Val = None
 	}
 }
 
 func (c *Cell) LeftClick() {
+	if c.Pressed {
+		return
+	}
 	c.Display = actual
 	c.Pressed = true
+	c.Player = &Player{} // Unset the player if there was one
 	c.Val = StringData(c.Data)
 }
 
@@ -77,8 +88,6 @@ func (c *Cell) String() string {
 		return None
 	case flag:
 		return Flag
-	case unknown:
-		return Unknown
 	case actual:
 		return StringData(c.Data)
 	default:

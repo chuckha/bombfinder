@@ -53,7 +53,8 @@ func TestZeroAroundWin(t *testing.T) {
 		}
 	}
 	b := NewBoardWithField(board)
-	b.LeftClick(0, 0)
+	p := &Player{Playing: true}
+	b.LeftClick(p, 0, 0)
 	if !b.Won {
 		t.Errorf("Zero around is able to win.: %d, %d", b.Numbers, b.Clicked)
 	}
@@ -65,13 +66,15 @@ func TestClickedStartsAtZero(t *testing.T) {
 		t.Errorf("We haven't clicked anything yet!")
 	}
 }
+
 func TestMultipleClicks(t *testing.T) {
 	b := buildBoard()
-	b.LeftClick(0, 0)
-	b.LeftClick(0, 0)
-	b.LeftClick(0, 0)
-	b.LeftClick(0, 0)
-	b.LeftClick(0, 0)
+	p := &Player{Playing: true}
+	b.LeftClick(p, 0, 0)
+	b.LeftClick(p, 0, 0)
+	b.LeftClick(p, 0, 0)
+	b.LeftClick(p, 0, 0)
+	b.LeftClick(p, 0, 0)
 	if b.Clicked != 1 {
 		t.Errorf("Multiple Clicks should only count once.\nExpected: %d\nGot: %d", 1, b.Clicked)
 	}
@@ -80,26 +83,27 @@ func TestMultipleClicks(t *testing.T) {
 // If all the values are clicked, we have won
 func TestWinCondition(t *testing.T) {
 	b := buildBoard()
-	b.LeftClick(0, 0)
-	b.LeftClick(0, 4)
-	b.LeftClick(1, 1)
-	b.LeftClick(1, 2)
-	b.LeftClick(1, 4)
-	b.LeftClick(2, 0)
-	b.LeftClick(2, 1)
-	b.LeftClick(2, 2)
-	b.LeftClick(2, 3)
-	b.LeftClick(4, 2)
-	b.LeftClick(4, 4)
+	p := &Player{Playing: true}
+	b.LeftClick(p, 0, 0)
+	b.LeftClick(p, 0, 4)
+	b.LeftClick(p, 1, 1)
+	b.LeftClick(p, 1, 2)
+	b.LeftClick(p, 1, 4)
+	b.LeftClick(p, 2, 0)
+	b.LeftClick(p, 2, 1)
+	b.LeftClick(p, 2, 2)
+	b.LeftClick(p, 2, 3)
+	b.LeftClick(p, 4, 2)
+	b.LeftClick(p, 4, 4)
 	if b.Won {
 		t.Errorf("We haven't won yet")
 	}
-	b.LeftClick(5, 4)
+	b.LeftClick(p, 5, 4)
 	if !b.Won {
 		t.Errorf("We actually won.")
 	}
 	// Victory!!
-	err := b.LeftClick(0, 1)
+	err := b.LeftClick(p, 0, 1)
 	if err != nil {
 		t.Errorf("We should not do anything on a victory board")
 	}
@@ -108,15 +112,19 @@ func TestWinCondition(t *testing.T) {
 // If you click a finished board, nothing will happen
 func TestClickFinishedBoard(t *testing.T) {
 	b := buildBoard()
-	b.LeftClick(0, 1)
-	if b.Finished == false {
-		t.Errorf("Game is actually finished")
+	p := &Player{Playing: true}
+	b.LeftClick(p, 0, 1)
+	if p.Playing {
+		t.Errorf("Player clicked on a bomb, they should be dead")
 	}
-	err := b.LeftClick(1, 1)
+	if b.Finished {
+		t.Errorf("Board is not finished until all the numbers are clicked")
+	}
+	err := b.LeftClick(p, 1, 1)
 	if err != nil {
 		t.Errorf("A click on a finished board should not do anything")
 	}
-	err = b.RightClick(1, 1)
+	err = b.RightClick(p, 1, 1)
 	if err != nil {
 		t.Errorf("A right click on a finished board should not do anything")
 	}
@@ -125,12 +133,17 @@ func TestClickFinishedBoard(t *testing.T) {
 func TestLoseCondition(t *testing.T) {
 	// If I leftclick on a bomb, I should lose
 	b := buildBoard()
-	err := b.LeftClick(0, 1)
+	p := &Player{Playing: true}
+	err := b.LeftClick(p, 0, 1)
 	if err == nil {
 		t.Errorf("You clicked on a bomb, you should have an error here")
 	}
-	if b.Finished == false || b.Won == true {
-		t.Errorf("Should not have finished or should not have won.")
+	if p.Playing {
+		t.Errorf("I may die but the board carries on.")
+	}
+	b.LeftClick(p, 0, 0)
+	if b.Field[0][0].Display == actual {
+		t.Errorf("A dead player can't click on the board anymore")
 	}
 }
 

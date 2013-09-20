@@ -9,10 +9,19 @@
 	<h1>Bomb Finder</h1>
 </header>
 <main>
-	<p>There are <span id="bombs"></span> bombs left.</p>
-	<div id="time"></div>
-	<button id="newgame" value="New Game">New Game</button>
-	<div id="wrapper"></div>
+	<div id="usernamestuff">
+		<div id="errorusername"></div>
+		<input id="username" placeholder="Enter a username"/>
+		<button id="username-submit">Play</button>
+	</div>
+	<div id="wrapper">
+		<div id="startInfo"></div>
+		<div id="game"></div>
+		<div id="info">
+			<table id="playerTable">
+			</table>
+		</div>
+	</div>
 </main>
 <footer>
 <small>Made by <a href="https://github.com/ChuckHa">Chuck</a></small>

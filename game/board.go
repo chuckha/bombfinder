@@ -84,16 +84,16 @@ func (b *Board) String() string {
 	return out
 }
 
-func (b *Board) RightClick(row, col int) error {
-	if b.Finished {
+func (b *Board) RightClick(player *Player, row, col int) error {
+	if b.Finished || !player.Playing {
 		return nil
 	}
-	b.Field[row][col].RightClick()
+	b.Field[row][col].RightClick(player)
 	return nil
 }
-func (b *Board) LeftClick(row, col int) error {
+func (b *Board) LeftClick(player *Player, row, col int) error {
 	// If the board is finished, don't do anything
-	if b.Finished {
+	if b.Finished || !player.Playing {
 		return nil
 	}
 	// If it's already been clicked, don't do anything
@@ -111,11 +111,9 @@ func (b *Board) LeftClick(row, col int) error {
 		return nil
 	case bomb:
 		// If we click a bomb, we lose the game
-		b.Finished = true
-		b.Won = false
+		player.Die()
 		return fmt.Errorf("Boom!")
 	default:
-		// Otherwise we clicked a number. One step closer to victory
 		b.Clicked += 1
 		if b.Clicked == b.Numbers {
 			b.Finished = true

@@ -4,10 +4,10 @@ import ()
 
 type InMessage struct {
 	Type  string
-	Value Message
+	Value MoveMessage
 }
 
-type Message struct {
+type MoveMessage struct {
 	Click string
 	Row   int
 	Col   int
@@ -16,4 +16,18 @@ type Message struct {
 type OutMessage struct {
 	Type  string
 	Value interface{}
+}
+
+type InfoMessage struct {
+	Required int
+	Have     int
+}
+
+type PlayerMessage struct {
+	Players []*Player
+}
+
+type ErrorMessage struct {
+	Type  string
+	Value string
 }
